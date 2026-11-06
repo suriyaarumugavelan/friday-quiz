@@ -1,6 +1,12 @@
 // Each question earns one letter. In question order the letters are a
 // scramble of RELAXATION, so the tiles still need unscrambling at the end.
 window.QUIZ = {
+  passwordClue: "Piglet",
+  passwordHash: "417f1824ba04658978262aea110b75724ed39c984ccbed0b5c56a7ad801d0f1c",
+  passwordNudges: [
+    "Not quite. Think about the clue.",
+    "Hmm, no. Gracie is unconvinced.",
+  ],
   acceptedThemes: ["RELAXATION", "SELFCARE"],
   questions: [
     {

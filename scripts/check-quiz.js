@@ -6,7 +6,7 @@ const vm = require("vm");
 const root = path.join(__dirname, "..");
 const sandbox = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, "quiz.js"), "utf8"), sandbox);
-const { questions, acceptedThemes } = sandbox.window.QUIZ;
+const { questions, acceptedThemes, passwordHash, passwordClue } = sandbox.window.QUIZ;
 
 const problems = [];
 questions.forEach((q, i) => {
@@ -14,6 +14,8 @@ questions.forEach((q, i) => {
   if (new Set(q.options).size !== q.options.length) problems.push(`Question ${i + 1} has duplicate options`);
   if (!Number.isInteger(q.correct) || !q.options[q.correct]) problems.push(`Question ${i + 1} has no valid correct answer`);
 });
+
+if (!/^[0-9a-f]{64}$/.test(passwordHash || "") || !passwordClue) problems.push("Password hash or clue is missing");
 
 const sorted = (s) => [...s].sort().join("");
 const letters = questions.map((q) => q.letter).join("");

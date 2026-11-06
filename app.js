@@ -2,16 +2,17 @@
   "use strict";
 
   const STORAGE_KEY = "birthday-quiz-progress";
-  const { questions, nudges, themeNudges, acceptedThemes } = window.QUIZ;
+  const { questions, nudges, themeNudges, acceptedThemes, passwordClue, passwordHash, passwordNudges } = window.QUIZ;
   const { message, signature, itinerary } = window.BIRTHDAY;
   const app = document.getElementById("app");
 
   function loadState() {
-    const fresh = { started: false, answered: 0, unlocked: false };
+    const fresh = { passed: false, started: false, answered: 0, unlocked: false };
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Number.isInteger(saved.answered)) return fresh;
       return {
+        passed: Boolean(saved.passed),
         started: Boolean(saved.started),
         answered: Math.min(Math.max(saved.answered, 0), questions.length),
         unlocked: Boolean(saved.unlocked),
@@ -60,6 +61,52 @@
       list.append(el("li", classes.filter(Boolean).join(" "), earned ? question.letter : ""));
     });
     return list;
+  }
+
+  async function hashPassword(value) {
+    const bytes = new TextEncoder().encode(value.trim().toLowerCase());
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  function renderPassword() {
+    const form = el("form");
+    const input = el("input", "guess");
+    input.type = "text";
+    input.placeholder = "Password";
+    input.setAttribute("aria-label", "Password");
+    input.autocomplete = "off";
+    input.setAttribute("autocapitalize", "off");
+    input.setAttribute("autocorrect", "off");
+    input.spellcheck = false;
+    const submit = el("button", "primary", "Enter");
+    submit.type = "submit";
+    const feedback = el("p", "feedback");
+    feedback.setAttribute("aria-live", "polite");
+    let wrongCount = 0;
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!input.value.trim()) return;
+      if ((await hashPassword(input.value)) === passwordHash) {
+        state.passed = true;
+        saveState();
+        render();
+        return;
+      }
+      feedback.className = "feedback bad";
+      feedback.textContent = passwordNudges[wrongCount % passwordNudges.length];
+      wrongCount += 1;
+      input.select();
+    });
+
+    form.append(input, feedback, submit);
+    show(
+      el("p", "kicker", "Restricted access"),
+      heading("Enter the password"),
+      el("p", "", `Clue: ${passwordClue}`),
+      form
+    );
   }
 
   function renderIntro() {
@@ -186,17 +233,30 @@
       list.append(row);
     });
 
+    const replay = el("button", "primary replay", "Play again");
+    replay.type = "button";
+    replay.addEventListener("click", () => {
+      if (!window.confirm("Play again? You'll need to solve the quiz again to see your itinerary.")) return;
+      state.started = false;
+      state.answered = 0;
+      state.unlocked = false;
+      saveState();
+      render();
+    });
+
     show(
       el("p", "kicker", "Breaking news"),
       heading("Happy Birthday, Snigdhu!"),
       letter,
       el("p", "kicker", "Today's itinerary"),
-      list
+      list,
+      replay
     );
   }
 
   function render() {
-    if (state.unlocked) renderReveal();
+    if (!state.passed) renderPassword();
+    else if (state.unlocked) renderReveal();
     else if (!state.started) renderIntro();
     else if (state.answered < questions.length) renderQuestion();
     else renderGuess();

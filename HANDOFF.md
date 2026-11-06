@@ -12,4 +12,5 @@ Static birthday quiz, published on GitHub Pages from `main`. No build step.
 ## Rules
 - This repo is public. Keep the real itinerary details out of it; only the puns belong here.
 - Each question's letter must stay part of the RELAXATION scramble.
+- The password is stored only as a SHA-256 hash of its lowercase form. Never put the plain password in this repo.
 - Progress is saved per device in `localStorage`. Use a private window to replay.

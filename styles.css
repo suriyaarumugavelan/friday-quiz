@@ -229,6 +229,8 @@ input:focus-visible {
   color: var(--muted);
 }
 
+.replay { margin-top: 24px; }
+
 @media (prefers-reduced-motion: reduce) {
   .tile.new { animation: none; }
 }
