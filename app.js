@@ -2,17 +2,27 @@
   "use strict";
 
   const STORAGE_KEY = "birthday-quiz-progress";
+  const PASSWORD_KEY = "birthday-quiz-password-passed";
   const { questions, nudges, themeNudges, acceptedThemes, passwordClue, passwordHash, passwordNudges } = window.QUIZ;
   const { message, signature, itinerary } = window.BIRTHDAY;
   const app = document.getElementById("app");
 
+  // Lives in sessionStorage so each new tab or visit asks again.
+  function passwordPassed() {
+    try {
+      return sessionStorage.getItem(PASSWORD_KEY) === "yes";
+    } catch {
+      return false;
+    }
+  }
+
   function loadState() {
-    const fresh = { passed: false, started: false, answered: 0, unlocked: false };
+    const fresh = { passed: passwordPassed(), started: false, answered: 0, unlocked: false };
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (!saved || !Number.isInteger(saved.answered)) return fresh;
       return {
-        passed: Boolean(saved.passed),
+        passed: fresh.passed,
         started: Boolean(saved.started),
         answered: Math.min(Math.max(saved.answered, 0), questions.length),
         unlocked: Boolean(saved.unlocked),
@@ -26,7 +36,9 @@
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const { passed, ...progress } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      if (passed) sessionStorage.setItem(PASSWORD_KEY, "yes");
     } catch {
       // Private browsing can block storage; the quiz still works without it.
     }
